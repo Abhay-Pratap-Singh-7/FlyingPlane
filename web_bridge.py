@@ -9,15 +9,28 @@ CONNECTED_CLIENTS = set()
 loop = None
 
 def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    ips = []
+    # Try 8.8.8.8 connect first to find primary internet-facing IP
     try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 80))
         ip = s.getsockname()[0]
-    except Exception:
-        ip = '127.0.0.1'
-    finally:
         s.close()
-    return ip
+        if ip and ip != '127.0.0.1':
+            ips.append(ip)
+    except Exception:
+        pass
+    
+    # Supplement/fallback with all local hostnames
+    try:
+        hostname = socket.gethostname()
+        for ip in socket.gethostbyname_ex(hostname)[2]:
+            if ip != '127.0.0.1' and not ip.startswith('169.254') and ip not in ips:
+                ips.append(ip)
+    except Exception:
+        pass
+        
+    return " or ".join(ips) if ips else '127.0.0.1'
 
 async def register(websocket):
     CONNECTED_CLIENTS.add(websocket)
