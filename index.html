@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paper Plane Ocean Odyssey</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #bae6fd; /* Sky Blue */
+            font-family: 'Quicksand', sans-serif;
+            color: #0f172a;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        /* HUD UI Overlay */
+        .hud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+        }
+        .interactive {
+            pointer-events: auto;
+        }
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+        .score-container {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(8px);
+            border: 2px solid #0284c7; /* Ocean Blue */
+            border-radius: 16px;
+            padding: 12px 25px;
+            box-shadow: 0 8px 16px rgba(2, 132, 199, 0.12);
+        }
+        .score-label {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #0369a1;
+        }
+        .score-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 32px;
+            font-weight: 900;
+            color: #075985;
+            line-height: 1;
+            margin-top: 4px;
+        }
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(8px);
+            border: 2px solid #ef4444;
+            border-radius: 30px;
+            padding: 10px 20px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 13px;
+            color: #ef4444;
+            box-shadow: 0 8px 16px rgba(239, 68, 68, 0.08);
+        }
+        .connection-status.connected {
+            border-color: #10b981;
+            color: #047857;
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.08);
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #ef4444;
+        }
+        .connection-status.connected .status-dot {
+            background-color: #10b981;
+        }
+
+        /* Bottom Controls / Settings Panel */
+        .bottom-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            width: 100%;
+        }
+        .settings-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 20px;
+            padding: 20px;
+            width: 320px;
+            box-shadow: 0 10px 30px rgba(2, 132, 199, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .settings-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #0369a1;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #475569;
+            font-weight: 700;
+        }
+        .slider-input {
+            width: 100%;
+            accent-color: #0284c7;
+            cursor: pointer;
+        }
+
+        /* Menu Panel overlay (Menu & Game Over) */
+        .modal-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            background: rgba(224, 242, 254, 0.85); /* Light Blue Overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.5s ease;
+        }
+        .modal-content {
+            background: #ffffff;
+            border: 3px solid #0284c7;
+            border-radius: 28px;
+            padding: 50px 40px;
+            width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(2, 132, 199, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        .modal-title {
+            font-family: 'Quicksand', sans-serif;
+            font-size: 44px;
+            font-weight: 900;
+            color: #0369a1;
+            letter-spacing: 1px;
+        }
+        .modal-description {
+            font-size: 16px;
+            color: #475569;
+            line-height: 1.6;
+        }
+        .guide-box {
+            background: #f0f9ff;
+            border-radius: 16px;
+            padding: 20px;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+            color: #1e293b;
+            border-left: 5px solid #0284c7;
+        }
+        .guide-box ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+        .action-button {
+            font-family: 'Quicksand', sans-serif;
+            background: #0284c7;
+            border: none;
+            border-radius: 30px;
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 14px 40px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(2, 132, 199, 0.25);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            width: 100%;
+        }
+        .action-button:hover {
+            transform: translateY(-2px);
+            background: #0369a1;
+            box-shadow: 0 12px 24px rgba(3, 105, 161, 0.3);
+        }
+
+        /* Float scoring indicators */
+        .score-splash {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 26px;
+            font-weight: 900;
+            color: #0284c7;
+            text-shadow: 0 2px 6px rgba(2, 132, 199, 0.2);
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            z-index: 50;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -150%) scale(1.2);
+                opacity: 0;
+            }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.85); opacity: 0.6; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- HUD Overlay -->
+    <div class="hud-overlay">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <div class="score-container">
+                <div class="score-label">Score</div>
+                <div id="score-val" class="score-value">0000</div>
+            </div>
+            
+            <div id="ws-status" class="connection-status interactive">
+                <div class="status-dot"></div>
+                <span id="ws-status-text">Disconnected</span>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <!-- Settings panel removed from bottom-bar and placed in Start Menu modal -->
+            <div style="flex-grow: 1;"></div>
+
+            <div class="score-container" style="border-color: #0369a1; box-shadow: 0 8px 16px rgba(2, 132, 199, 0.12);">
+                <div class="score-label" style="color: #0369a1;">High Score</div>
+                <div id="highscore-val" class="score-value" style="color: #0369a1;">0000</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL OVERLAYS -->
+    <!-- Connection Onboarding Modal -->
+    <div id="onboard-modal" class="modal-container" style="opacity: 1;">
+        <div class="modal-content" style="width: 480px; gap: 20px;">
+            <div class="modal-title" style="font-size: 32px; letter-spacing: 0.5px;">Connect Telemetry</div>
+            
+            <div id="onboard-status" style="display: flex; align-items: center; gap: 10px; background: #f1f5f9; border-radius: 20px; padding: 10px 20px;">
+                <div id="onboard-status-dot" class="status-dot" style="background-color: #ef4444;"></div>
+                <span id="onboard-status-text" style="font-weight: 700; color: #475569; font-size: 14px;">Waiting for local bridge...</span>
+            </div>
+
+            <div id="onboard-instructions" style="text-align: left; width: 100%; display: flex; flex-direction: column; gap: 12px; font-size: 14px;">
+                <div class="guide-box" style="margin: 0; padding: 12px; border-left: 5px solid #0284c7; background: #f0f9ff;">
+                    <strong style="color: #0369a1; font-size: 14px;">1. Same Network Setup</strong>
+                    <div style="margin-top: 4px; color: #475569; line-height: 1.4;">
+                        Ensure both your <strong>mobile phone</strong> and <strong>laptop</strong> are on the <strong>same Wi-Fi network</strong>.
+                    </div>
+                </div>
+
+                <div class="guide-box" style="margin: 0; padding: 12px; border-left: 5px solid #f59e0b; background: #fffbeb;">
+                    <strong style="color: #d97706; font-size: 14px;">2. Start the Local Bridge</strong>
+                    <div style="margin-top: 4px; color: #475569; line-height: 1.4;">
+                        Run this command on your laptop to bridge phone UDP telemetry to this browser:
+                        <code style="display: block; background: #1e293b; color: #f8fafc; padding: 6px 10px; border-radius: 6px; margin-top: 6px; font-family: monospace; font-size: 12px;">python3 web_bridge.py</code>
+                    </div>
+                </div>
+
+                <div id="onboard-ip-section" class="guide-box" style="margin: 0; padding: 12px; border-left: 5px solid #10b981; background: #ecfdf5; display: none;">
+                    <strong style="color: #059669; font-size: 14px;">3. Enter IP on Phone</strong>
+                    <div style="margin-top: 4px; color: #475569; line-height: 1.4;">
+                        Open the Android app on your phone, set the IP below, and start streaming:
+                        <div style="font-size: 22px; font-weight: 900; color: #047857; text-align: center; margin-top: 6px; background: #ffffff; padding: 8px; border-radius: 6px; border: 1px dashed #10b981; letter-spacing: 0.5px;">
+                            <span id="ip-address">Detecting IP...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="onboard-waiting-mobile" style="display: none; align-items: center; gap: 8px; color: #0284c7; font-weight: bold; font-size: 14px; margin-top: 5px;">
+                <div class="status-dot" style="background-color: #0284c7; animation: pulse 1.2s infinite;"></div>
+                <span>Waiting for mobile telemetry stream...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Menu -->
+    <div id="menu-modal" class="modal-container" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-title">Ocean Odyssey</div>
+
+            <!-- Calibration Panel placed inside Menu before Take Off -->
+            <div class="settings-panel interactive" style="width: 100%; box-shadow: none; border: 1px solid rgba(0, 0, 0, 0.08); background: #f8fafc; text-align: left; padding: 16px;">
+                <div class="settings-title">Calibration Panel</div>
+                
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Tilt Sensitivity</span>
+                        <span id="val-sensitivity">1.5x</span>
+                    </div>
+                    <input id="slider-sensitivity" class="slider-input" type="range" min="0.5" max="4.0" step="0.1" value="1.5">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>Input Smoothing</span>
+                        <span id="val-smoothing">85%</span>
+                    </div>
+                    <input id="slider-smoothing" class="slider-input" type="range" min="50" max="95" step="1" value="85">
+                </div>
+
+                <div class="slider-group">
+                    <label class="slider-label" style="display: flex; align-items: center; gap: 8px; margin-top: 5px; cursor: pointer;">
+                        <input id="chk-invert" type="checkbox" style="width: 18px; height: 18px; accent-color: #0284c7;" checked>
+                        <span>Invert Y-Axis (Pitch)</span>
+                    </label>
+                </div>
+            </div>
+            <button id="btn-start" class="action-button">Set Sail</button>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameover-modal" class="modal-container" style="display: none;">
+        <div class="modal-content" style="border-color: #ef4444; box-shadow: 0 10px 40px rgba(239, 68, 68, 0.15);">
+            <div class="modal-title" style="color: #ef4444;">Plane Crashed</div>
+            <div class="modal-description" style="font-size: 18px;">
+                You touched the ocean or missed an entry hoop.
+            </div>
+            <div style="font-size: 26px; font-weight: 700; color: #0369a1; font-family: 'Quicksand', sans-serif;">
+                SCORE: <span id="final-score">0</span>
+            </div>
+            <button id="btn-retry" class="action-button" style="background: #ef4444; box-shadow: 0 10px 20px rgba(239, 68, 68, 0.25);">Fly Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Game states
+        const STATE_MENU = 0;
+        const STATE_PLAYING = 1;
+        const STATE_GAMEOVER = 2;
+        let gameState = STATE_MENU;
+
+        let score = 0;
+        let highScore = 0;
+        let flightSpeed = 1.8;
+
+        // Gyroscope telemetry variables
+        let rawGyroX = 0;
+        let rawGyroY = 0;
+        let smoothGyroX = 0;
+        let smoothGyroY = 0;
+
+        // Settings / Calibration
+        let sensitivity = 1.5;
+        let smoothing = 0.85;
+        let invertPitch = true; // DEFAULT: Inverted (tilting down goes up, pulling back goes down)
+        const DEADZONE = 0.08;
+        const MAX_GYRO = 3.5;
+
+                // Position, Velocity & Acceleration (Physics Engine for Heavy Inertia)
+        let planePos = { x: 0, y: 0 };
+        let planeVel = { x: 0, y: 0 };
+        let planeAccel = { x: 0, y: 0 };
+        const DRAG = 0.08;      // Air resistance / friction
+        const THRUST = 0.28;    // Force multiplier of steering (reduced sensitivity)
+        
+        let targetRoll = 0;
+        let targetPitch = 0;
+        let targetYaw = 0;
+
+        // Three.js instances
+        let scene, camera, renderer;
+        let planeGroup, gridFloor, gridFloor2;
+        
+        // Distant Island landmark
+        let islandGroup;
+        let islandZ = -1200;
+
+        // Wingtip Trails
+        const maxTrailPoints = 35;
+        let leftTrailGeometry, rightTrailGeometry;
+        let leftTrailLine, rightTrailLine;
+        let leftTrailHistory = [];
+        let rightTrailHistory = [];
+
+        // Scenery clouds & mountains
+        let clouds = [];
+        const cloudCount = 10;
+        let sceneryObjects = [];
+        const sceneryCount = 10;
+
+        // Torus gates
+        let gates = [];
+        const gateCount = 3;
+        const gateSpacing = 300;
+
+        // Particle sparks (Paper confetti)
+        let explosionParticles = [];
+
+        // Camera Shake
+        let shakeIntensity = 0;
+        const shakeDecay = 0.93;
+
+        let mobileConnected = false;
+
+        // UI elements
+        const scoreVal = document.getElementById("score-val");
+        const highscoreVal = document.getElementById("highscore-val");
+        const wsStatus = document.getElementById("ws-status");
+        const wsStatusText = document.getElementById("ws-status-text");
+        
+        const sliderSensitivity = document.getElementById("slider-sensitivity");
+        const valSensitivity = document.getElementById("val-sensitivity");
+        const sliderSmoothing = document.getElementById("slider-smoothing");
+        const valSmoothing = document.getElementById("val-smoothing");
+        const chkInvert = document.getElementById("chk-invert");
+
+        const onboardModal = document.getElementById("onboard-modal");
+        const onboardStatusDot = document.getElementById("onboard-status-dot");
+        const onboardStatusText = document.getElementById("onboard-status-text");
+        const onboardIpSection = document.getElementById("onboard-ip-section");
+        const onboardWaitingMobile = document.getElementById("onboard-waiting-mobile");
+        const ipAddressText = document.getElementById("ip-address");
+
+        const menuModal = document.getElementById("menu-modal");
+        const gameoverModal = document.getElementById("gameover-modal");
+        const btnStart = document.getElementById("btn-start");
+        const btnRetry = document.getElementById("btn-retry");
+        const finalScoreLabel = document.getElementById("final-score");
+
+        // Event listeners
+        sliderSensitivity.addEventListener("input", (e) => {
+            sensitivity = parseFloat(e.target.value);
+            valSensitivity.innerText = sensitivity.toFixed(1) + "x";
+        });
+        sliderSmoothing.addEventListener("input", (e) => {
+            const pct = parseInt(e.target.value);
+            smoothing = pct / 100.0;
+            valSmoothing.innerText = pct + "%";
+        });
+        chkInvert.addEventListener("change", (e) => {
+            invertPitch = e.target.checked;
+        });
+
+        btnStart.addEventListener("click", () => {
+            startGame();
+        });
+        btnRetry.addEventListener("click", () => {
+            gameoverModal.style.opacity = 0;
+            setTimeout(() => {
+                gameoverModal.style.display = "none";
+                menuModal.style.display = "flex";
+                menuModal.style.opacity = 1;
+            }, 500);
+        });
+
+        // Initialize WebSocket connection
+        let ws;
+        function connectWebSocket() {
+            ws = new WebSocket("ws://localhost:8765");
+            
+            ws.onopen = () => {
+                wsStatus.classList.add("connected");
+                wsStatusText.innerText = "Connected";
+            };
+
+            ws.onmessage = (event) => {
+                const telemetry = JSON.parse(event.data);
+                
+                if (telemetry.type === "status") {
+                    ipAddressText.innerText = telemetry.ip;
+                    onboardStatusDot.style.backgroundColor = "#10b981";
+                    onboardStatusText.innerText = "Bridge Connected!";
+                    onboardIpSection.style.display = "block";
+                    onboardWaitingMobile.style.display = "flex";
+                    return;
+                }
+                
+                if (!mobileConnected) {
+                    mobileConnected = true;
+                    // Transition to menu modal
+                    onboardModal.style.opacity = 0;
+                    setTimeout(() => {
+                        onboardModal.style.display = "none";
+                        menuModal.style.display = "flex";
+                        menuModal.style.opacity = 1;
+                    }, 500);
+                }
+
+                // Truncate/clamp and filter
+                let hx = Math.abs(telemetry.x) > DEADZONE ? telemetry.x : 0;
+                let hy = Math.abs(telemetry.y) > DEADZONE ? telemetry.y : 0;
+                
+                hx = Math.max(-MAX_GYRO, Math.min(MAX_GYRO, hx));
+                hy = Math.max(-MAX_GYRO, Math.min(MAX_GYRO, hy));
+                
+                rawGyroX = hx;
+                rawGyroY = hy;
+            };
+
+            ws.onclose = () => {
+                wsStatus.classList.remove("connected");
+                wsStatusText.innerText = "Disconnected";
+                
+                // Reset onboarding states
+                mobileConnected = false;
+                onboardStatusDot.style.backgroundColor = "#ef4444";
+                onboardStatusText.innerText = "Waiting for local bridge...";
+                onboardIpSection.style.display = "none";
+                onboardWaitingMobile.style.display = "none";
+                
+                if (gameState === STATE_PLAYING || gameState === STATE_GAMEOVER) {
+                    gameState = STATE_MENU;
+                    gameoverModal.style.display = "none";
+                    menuModal.style.display = "none";
+                    onboardModal.style.display = "flex";
+                    onboardModal.style.opacity = 1;
+                } else if (menuModal.style.display === "flex") {
+                    menuModal.style.display = "none";
+                    onboardModal.style.display = "flex";
+                    onboardModal.style.opacity = 1;
+                }
+                
+                setTimeout(connectWebSocket, 2000);
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+        connectWebSocket();
+
+        // 3D Scene setup
+        function init3D() {
+            const container = document.getElementById("canvas-container");
+            
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0xbae6fd, 0.0018); // Blue Sky Fog
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.set(0, 0, 100);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0xbae6fd, 1);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.35);
+            directionalLight.position.set(200, 400, 100);
+            scene.add(directionalLight);
+
+            // Build Scrolling Ocean Floor
+            const gridGeo = new THREE.PlaneGeometry(2000, 2000, 1, 1);
+            const gridMat = new THREE.MeshBasicMaterial({ color: 0x0284c7 }); // Sky/Sea Blue
+            
+            gridFloor = new THREE.Mesh(gridGeo, gridMat);
+            gridFloor.rotation.x = -Math.PI / 2;
+            gridFloor.position.set(0, -90, -1000);
+            scene.add(gridFloor);
+
+            gridFloor2 = new THREE.Mesh(gridGeo, gridMat);
+            gridFloor2.rotation.x = -Math.PI / 2;
+            gridFloor2.position.set(0, -90, -3000);
+            scene.add(gridFloor2);
+
+
+
+            // Build Origami Paper Plane (Fix orientation: Facing NEGATIVE Z, which is forward)
+            planeGroup = new THREE.Group();
+            
+            const planeGeo = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                // Left Wing
+                0, 0, -12,      // Nose tip (forward, negative Z)
+                -13, 2, 10,     // Left wing tip (backward, positive Z)
+                0, 0.5, 9,      // Tail center top (backward, positive Z)
+                
+                // Right Wing
+                0, 0, -12,      // Nose tip (forward)
+                0, 0.5, 9,      // Tail center top
+                13, 2, 10,      // Right wing tip
+                
+                // Left bottom keel fold
+                0, 0, -12,      // Nose tip
+                0, 0.5, 9,      // Tail center top
+                -1, -1.8, 8,    // Keel left bottom
+                
+                // Right bottom keel fold
+                0, 0, -12,      // Nose tip
+                1, -1.8, 8,     // Keel right bottom
+                0, 0.5, 9       // Tail center top
+            ]);
+
+            planeGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            planeGeo.computeVertexNormals();
+
+            const planeMat = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                side: THREE.DoubleSide
+            });
+
+            const paperPlaneMesh = new THREE.Mesh(planeGeo, planeMat);
+            planeGroup.add(paperPlaneMesh);
+
+            // Outline lines to define origami folds
+            const wireframeGeo = new THREE.WireframeGeometry(planeGeo);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, linewidth: 2 });
+            const lines = new THREE.LineSegments(wireframeGeo, lineMat);
+            planeGroup.add(lines);
+
+            planeGroup.position.set(0, 0, 0);
+            scene.add(planeGroup);
+
+            // Initialize Wingtip Vortex Trails
+            leftTrailGeometry = new THREE.BufferGeometry();
+            rightTrailGeometry = new THREE.BufferGeometry();
+            
+            const trailPositionsLeft = new Float32Array(maxTrailPoints * 3);
+            const trailPositionsRight = new Float32Array(maxTrailPoints * 3);
+            
+            leftTrailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositionsLeft, 3));
+            rightTrailGeometry.setAttribute('position', new THREE.BufferAttribute(trailPositionsRight, 3));
+            
+            // Fading white/teal trail lines
+            const trailMat = new THREE.LineBasicMaterial({
+                color: 0xe0f2fe,
+                linewidth: 3,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            leftTrailLine = new THREE.Line(leftTrailGeometry, trailMat);
+            rightTrailLine = new THREE.Line(rightTrailGeometry, trailMat);
+            scene.add(leftTrailLine);
+            scene.add(rightTrailLine);
+
+            // Build Distant Island Landmark
+            buildDistantIsland();
+
+            // Spawn Clouds
+            for (let i = 0; i < cloudCount; i++) {
+                spawnCloud(-randomRange(300, 1400));
+            }
+
+            // Spawn Scenic Mountains along the margins
+            for (let i = 0; i < sceneryCount; i++) {
+                spawnMountain((i + 1) * 140 + 100);
+            }
+
+            // Hoops
+            for (let i = 0; i < gateCount; i++) {
+                createGate((i + 1) * gateSpacing + 100);
+            }
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Build low-poly tropical island (Very low-lying)
+        function buildDistantIsland() {
+            islandGroup = new THREE.Group();
+
+            // Sandy beach base (Extremely thin)
+            const beachGeo = new THREE.CylinderGeometry(200, 260, 4, 8);
+            const beachMat = new THREE.MeshBasicMaterial({ color: 0xfef08a }); // Light yellow sand
+            const beach = new THREE.Mesh(beachGeo, beachMat);
+            beach.position.y = -90; // Sits at ocean height
+            islandGroup.add(beach);
+
+            // Green hills (Very low and flat)
+            const hill1Geo = new THREE.ConeGeometry(150, 22, 5);
+            const hillMat = new THREE.MeshBasicMaterial({ color: 0x10b981 }); // Green
+            const hill1 = new THREE.Mesh(hill1Geo, hillMat);
+            hill1.position.set(-30, -80, -20);
+            islandGroup.add(hill1);
+
+            const hill2Geo = new THREE.ConeGeometry(110, 15, 5);
+            const hill2 = new THREE.Mesh(hill2Geo, hillMat);
+            hill2.position.set(50, -84, 30);
+            islandGroup.add(hill2);
+
+            // Small palm trees (lower height)
+            const trunkGeo = new THREE.CylinderGeometry(1.2, 2.0, 14, 5);
+            const trunkMat = new THREE.MeshBasicMaterial({ color: 0x78350f });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.set(-60, -84, 40);
+            trunk.rotation.z = 0.2;
+            islandGroup.add(trunk);
+
+            const leavesGeo = new THREE.ConeGeometry(8, 4, 5);
+            const leavesMat = new THREE.MeshBasicMaterial({ color: 0x047857 });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.set(-62, -76, 40);
+            islandGroup.add(leaves);
+
+            islandGroup.position.set(0, 0, islandZ);
+            scene.add(islandGroup);
+        }
+
+        // Spawn low-poly cloud
+        function spawnCloud(zPos) {
+            const cloud = new THREE.Group();
+            const puffMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85 });
+            
+            const puff1 = new THREE.Mesh(new THREE.DodecahedronGeometry(25), puffMat);
+            puff1.position.set(0, 0, 0);
+            cloud.add(puff1);
+
+            const puff2 = new THREE.Mesh(new THREE.DodecahedronGeometry(18), puffMat);
+            puff2.position.set(-20, -5, 0);
+            cloud.add(puff2);
+
+            const puff3 = new THREE.Mesh(new THREE.DodecahedronGeometry(18), puffMat);
+            puff3.position.set(20, -5, 0);
+            cloud.add(puff3);
+
+            const rx = Math.random() > 0.5 ? randomRange(180, 400) : randomRange(-400, -180);
+            const ry = randomRange(60, 200);
+
+            cloud.position.set(rx, ry, zPos);
+            scene.add(cloud);
+            
+            clouds.push({
+                mesh: cloud,
+                x: rx,
+                y: ry,
+                z: zPos
+            });
+        }
+
+        function spawnMountain(zPos) {
+            const mountainGroup = new THREE.Group();
+            
+            const height = randomRange(200, 350);
+            const radius = randomRange(150, 250);
+            const geo = new THREE.ConeGeometry(radius, height, 4); // 4-sided low-poly mountain peak
+            const mat = new THREE.MeshBasicMaterial({ color: 0x047857 }); // Forest green mountain
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            // Cone center position so it sits flat on the ocean floor (-90)
+            mesh.position.y = height / 2 - 90;
+            mountainGroup.add(mesh);
+
+            // Spawn strictly on left or right margin (out of flight path)
+            const xOffset = Math.random() > 0.5 ? randomRange(280, 380) : randomRange(-380, -280);
+            mountainGroup.position.set(xOffset, 0, -zPos);
+            
+            scene.add(mountainGroup);
+            
+            sceneryObjects.push({
+                mesh: mountainGroup,
+                xOffset: xOffset,
+                z: zPos
+            });
+        }
+
+        function createGate(zPos) {
+            const torusGeo = new THREE.TorusGeometry(32, 1.8, 8, 24);
+            const torusMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24 }); // Golden Hoop
+            const mesh = new THREE.Mesh(torusGeo, torusMat);
+            
+            // Keep hoops strictly in the sky (Y = 10 to 70) to prevent any overlap with the low-lying island
+            const rx = (Math.random() - 0.5) * 160;
+            const ry = Math.random() * 60 + 10; 
+            
+            mesh.position.set(rx, ry, -zPos);
+            scene.add(mesh);
+            
+            gates.push({
+                mesh: mesh,
+                x: rx,
+                y: ry,
+                z: zPos,
+                radius: 32,
+                passed: false
+            });
+        }
+
+        function startGame() {
+            score = 0;
+            flightSpeed = 2.0;
+            planePos.x = 0;
+            planePos.y = 0;
+            planeVel.x = 0;
+            planeVel.y = 0;
+            planeAccel.x = 0;
+            planeAccel.y = 0;
+            
+            scoreVal.innerText = "0000";
+            
+            // Reset island
+            islandZ = -1200;
+            islandGroup.position.z = islandZ;
+            
+            // Clear existing gates
+            gates.forEach(g => scene.remove(g.mesh));
+            gates = [];
+            for (let i = 0; i < gateCount; i++) {
+                createGate((i + 1) * gateSpacing + 100);
+            }
+
+            // Reset trail history
+            leftTrailHistory = [];
+            rightTrailHistory = [];
+
+            // Remove particles
+            explosionParticles.forEach(p => scene.remove(p.mesh));
+            explosionParticles = [];
+
+            menuModal.style.opacity = 0;
+            setTimeout(() => {
+                menuModal.style.display = "none";
+                gameState = STATE_PLAYING;
+            }, 500);
+        }
+
+        function triggerGameOver() {
+            gameState = STATE_GAMEOVER;
+            highScore = Math.max(highScore, score);
+            
+            highscoreVal.innerText = String(highScore).padStart(4, '0');
+            finalScoreLabel.innerText = score;
+
+            createExplosion(planeGroup.position.x, planeGroup.position.y, planeGroup.position.z - 50);
+
+            shakeIntensity = 5.0;
+
+            setTimeout(() => {
+                gameoverModal.style.display = "flex";
+                gameoverModal.style.opacity = 1;
+            }, 1000);
+        }
+
+        // Confetti explosion
+        function createExplosion(x, y, z) {
+            const particleCount = 60;
+            const geo = new THREE.PlaneGeometry(1.5, 1.5);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const mat = new THREE.MeshBasicMaterial({ 
+                    color: Math.random() > 0.3 ? 0xffffff : 0xbae6fd,
+                    side: THREE.DoubleSide
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+                
+                mesh.position.set(
+                    x + (Math.random() - 0.5) * 8,
+                    y + (Math.random() - 0.5) * 8,
+                    z + (Math.random() - 0.5) * 8
+                );
+                
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                
+                scene.add(mesh);
+                
+                explosionParticles.push({
+                    mesh: mesh,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 8 + 3,
+                    vz: (Math.random() - 0.5) * 10,
+                    rx: (Math.random() - 0.5) * 0.2,
+                    ry: (Math.random() - 0.5) * 0.2,
+                    rz: (Math.random() - 0.5) * 0.2,
+                    life: 1.0,
+                    decay: 0.01 + Math.random() * 0.015
+                });
+            }
+        }
+
+        function spawnScoreTextSplash(text) {
+            const splash = document.createElement("div");
+            splash.classList.add("score-splash");
+            splash.innerText = text;
+            splash.style.left = "50%";
+            splash.style.top = "40%";
+            document.body.appendChild(splash);
+            
+            setTimeout(() => {
+                splash.remove();
+            }, 800);
+        }
+
+        function updateExplosions() {
+            for (let i = explosionParticles.length - 1; i >= 0; i--) {
+                const p = explosionParticles[i];
+                p.mesh.position.x += p.vx;
+                p.mesh.position.y += p.vy;
+                p.mesh.position.z += p.vz;
+                
+                p.mesh.rotation.x += p.rx;
+                p.mesh.rotation.y += p.ry;
+                p.mesh.rotation.z += p.rz;
+                
+                p.vy -= 0.15; // Gravity
+                p.life -= p.decay;
+                
+                p.mesh.scale.setScalar(p.life);
+                
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    explosionParticles.splice(i, 1);
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function randomRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // Core animation rendering loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Apply smoothing
+            smoothGyroX = smoothGyroX * smoothing + rawGyroX * (1 - smoothing);
+            smoothGyroY = smoothGyroY * smoothing + rawGyroY * (1 - smoothing);
+
+            if (gameState === STATE_PLAYING) {
+                // 1. Calculate steering forces from smoothed gyro values
+                let pitchInput = smoothGyroX * sensitivity;
+                let rollInput = smoothGyroY * sensitivity;
+                
+                if (invertPitch) {
+                    pitchInput = -pitchInput;
+                }
+                
+                // Roll tilting controls horizontal force (X-acceleration)
+                planeAccel.x = rollInput * THRUST;
+                
+                // Pitch tilting controls vertical force (Y-acceleration)
+                planeAccel.y = pitchInput * THRUST;
+                
+                // 2. Apply Euler integration with Drag to compute velocities and positions
+                planeVel.x = (planeVel.x + planeAccel.x) * (1.0 - DRAG);
+                planeVel.y = (planeVel.y + planeAccel.y) * (1.0 - DRAG);
+                
+                planePos.x += planeVel.x;
+                planePos.y += planeVel.y;
+                
+                // Restrict plane coordinates to stay in rendering view
+                if (planePos.x < -190) { planePos.x = -190; planeVel.x = 0; }
+                if (planePos.x > 190)  { planePos.x = 190;  planeVel.x = 0; }
+                if (planePos.y < -82)  { planePos.y = -82;  planeVel.y = 0; }
+                if (planePos.y > 85)   { planePos.y = 85;   planeVel.y = 0; }
+
+                planeGroup.position.x = planePos.x;
+                planeGroup.position.y = planePos.y;
+                planeGroup.position.z = 40; // Offset forward
+
+                // 3. Heavy aircraft rotation (yaw/pitch leads the direction of movement, roll banks)
+                // Yaw turns in direction of horizontal velocity (head moves first, tail catches up)
+                targetYaw = -planeVel.x * 0.16;
+                // Pitch turns in direction of vertical velocity
+                targetPitch = planeVel.y * 0.12;
+                // Roll banks during turns
+                targetRoll = -planeVel.x * 0.38;
+
+                planeGroup.rotation.y += (targetYaw - planeGroup.rotation.y) * 0.12;
+                planeGroup.rotation.x += (targetPitch - planeGroup.rotation.x) * 0.12;
+                planeGroup.rotation.z += (targetRoll - planeGroup.rotation.z) * 0.12;
+
+                // Update Wingtip Trails
+                // Compute wingtip world positions dynamically (local coordinates: Left tip = -13, Right tip = 13, Z-back = 10)
+                planeGroup.updateMatrixWorld(true);
+                const leftWingWorld = new THREE.Vector3(-13, 2, 10).applyMatrix4(planeGroup.matrixWorld);
+                const rightWingWorld = new THREE.Vector3(13, 2, 10).applyMatrix4(planeGroup.matrixWorld);
+
+                leftTrailHistory.push(leftWingWorld.clone());
+                rightTrailHistory.push(rightWingWorld.clone());
+
+                if (leftTrailHistory.length > maxTrailPoints) leftTrailHistory.shift();
+                if (rightTrailHistory.length > maxTrailPoints) rightTrailHistory.shift();
+
+                // Update left trail line geometry positions attribute
+                const leftPosAttr = leftTrailGeometry.attributes.position;
+                for (let i = 0; i < maxTrailPoints; i++) {
+                    const index = Math.min(i, leftTrailHistory.length - 1);
+                    if (index >= 0) {
+                        const pt = leftTrailHistory[index];
+                        leftPosAttr.setXYZ(i, pt.x, pt.y, pt.z);
+                    }
+                }
+                leftPosAttr.needsUpdate = true;
+
+                // Update right trail line geometry positions attribute
+                const rightPosAttr = rightTrailGeometry.attributes.position;
+                for (let i = 0; i < maxTrailPoints; i++) {
+                    const index = Math.min(i, rightTrailHistory.length - 1);
+                    if (index >= 0) {
+                        const pt = rightTrailHistory[index];
+                        rightPosAttr.setXYZ(i, pt.x, pt.y, pt.z);
+                    }
+                }
+                rightPosAttr.needsUpdate = true;
+
+                // Scroll Ocean Grids
+                gridFloor.position.z += flightSpeed;
+                gridFloor2.position.z += flightSpeed;
+
+                if (gridFloor.position.z >= 1100) {
+                    gridFloor.position.z = gridFloor2.position.z - 2000;
+                }
+                if (gridFloor2.position.z >= 1100) {
+                    gridFloor2.position.z = gridFloor.position.z - 2000;
+                }
+
+                // Scroll Scenic Mountains
+                sceneryObjects.forEach(obj => {
+                    obj.mesh.position.z += flightSpeed;
+                    if (obj.mesh.position.z >= 120) {
+                        obj.mesh.position.z = -1400 - randomRange(0, 150);
+                        obj.mesh.position.x = Math.random() > 0.5 ? randomRange(280, 380) : randomRange(-380, -280);
+                    }
+                });
+
+                // Scroll Clouds
+                clouds.forEach(cloud => {
+                    cloud.mesh.position.z += flightSpeed;
+                    if (cloud.mesh.position.z >= 120) {
+                        cloud.mesh.position.z = -randomRange(800, 1500);
+                        cloud.mesh.position.x = Math.random() > 0.5 ? randomRange(180, 400) : randomRange(-400, -180);
+                    }
+                });
+
+                // Scroll distant island closer
+                islandZ += flightSpeed * 0.45; // Relativistic slower approach for scale
+                islandGroup.position.z = islandZ;
+                
+                if (islandZ >= 150) {
+                    // Reset island back to horizon once passed
+                    islandZ = -1300;
+                    // Slightly shift layout for variety
+                    islandGroup.position.x = randomRange(-80, 80);
+                }
+
+                // Check Ocean surface collision
+                if (planePos.y <= -82) {
+                    triggerGameOver();
+                }
+
+                // Process Gate hoops
+                gates.forEach(gate => {
+                    gate.mesh.position.z += flightSpeed;
+
+                    if (gate.mesh.position.z >= 40 && !gate.passed) {
+                        gate.passed = true;
+                        
+                        const dx = planePos.x - gate.mesh.position.x;
+                        const dy = planePos.y - gate.mesh.position.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (dist <= gate.radius) {
+                            score += 10;
+                            scoreVal.innerText = String(score).padStart(4, '0');
+                            spawnScoreTextSplash("+10");
+                            
+                            // Flash wood color to bright green
+                            gate.mesh.material.color.setHex(0x10b981);
+                            
+                            flightSpeed = Math.min(5.5, flightSpeed + 0.08);
+                        } else {
+                            triggerGameOver();
+                        }
+                    }
+
+                    if (gate.mesh.position.z >= 120) {
+                        gate.mesh.position.z = -gateSpacing * gateCount + 100;
+                        gate.mesh.position.x = (Math.random() - 0.5) * 160;
+                        gate.mesh.position.y = (Math.random() - 0.5) * 80 + 10;
+                        gate.mesh.material.color.setHex(0xfbbf24);
+                        gate.passed = false;
+                    }
+                });
+
+                // Camera follow-lag
+                camera.position.x += (planePos.x - camera.position.x) * 0.08;
+                camera.position.y += ((planePos.y + 15) - camera.position.y) * 0.08;
+            } else if (gameState === STATE_GAMEOVER) {
+                planeGroup.rotation.x += 0.08;
+                planeGroup.rotation.y += 0.12;
+                planeGroup.position.y -= 1.0;
+            }
+
+            updateExplosions();
+
+            if (shakeIntensity > 0.01) {
+                camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.y += (Math.random() - 0.5) * shakeIntensity;
+                shakeIntensity *= shakeDecay;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        init3D();
+        animate();
+    </script>
+</body>
+</html>
