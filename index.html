@@ -1014,17 +1014,14 @@
                 planeGroup.position.y = planePos.y;
                 planeGroup.position.z = 40; // Offset forward
 
-                // 3. Heavy aircraft rotation (yaw/pitch leads the direction of movement, roll banks)
-                // Yaw turns in direction of horizontal velocity (head moves first, tail catches up)
-                targetYaw = -planeVel.x * 0.16;
-                // Pitch turns in direction of vertical velocity
-                targetPitch = planeVel.y * 0.12;
-                // Roll banks during turns
-                targetRoll = -planeVel.x * 0.38;
+                // 3. Aircraft rotation matches the phone's orientation directly
+                targetYaw = -rollInput * 0.20;
+                targetPitch = pitchInput * 0.15;
+                targetRoll = -rollInput * 0.45;
 
-                planeGroup.rotation.y += (targetYaw - planeGroup.rotation.y) * 0.12;
-                planeGroup.rotation.x += (targetPitch - planeGroup.rotation.x) * 0.12;
-                planeGroup.rotation.z += (targetRoll - planeGroup.rotation.z) * 0.12;
+                planeGroup.rotation.y += (targetYaw - planeGroup.rotation.y) * 0.05;
+                planeGroup.rotation.x += (targetPitch - planeGroup.rotation.x) * 0.05;
+                planeGroup.rotation.z += (targetRoll - planeGroup.rotation.z) * 0.05;
 
                 // Update Wingtip Trails
                 // Compute wingtip world positions dynamically (local coordinates: Left tip = -13, Right tip = 13, Z-back = 10)
