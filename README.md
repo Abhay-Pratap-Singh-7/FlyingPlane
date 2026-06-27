@@ -1,80 +1,57 @@
-# Paper Plane Ocean Odyssey - Game Consumer
+# Paper Plane Ocean Odyssey - Motion Controller & Game Display
 
-A 3D flight game built with Three.js where you control a paper plane flying over the ocean using your Android phone as a motion controller (via gyroscope telemetry).
+This repository contains the files required to play **Paper Plane Ocean Odyssey**, an interactive 3D flight game built with Three.js. The game uses an Android device's gyroscope telemetry as a physical motion controller to steer a paper plane over the ocean.
 
-## System Architecture
+## Repository Contents
 
-```
-[ Android Device (Producer) ] 
-       │ (UDP via Wi-Fi: Port 9000)
-       ▼
-[ Python Bridge (web_bridge.py) ]
-       │ (WebSockets: Port 8765)
-       ▼
-[ Web Browser (index.html) ]
-```
+*   **`app-release.apk`**: The controller application to be installed on your Android device. It captures gyroscope/accelerometer sensor data and streams it over the network.
+*   **`index.html`**: The 3D game client to be opened in a web browser on your monitor/display device (Mac, Windows, or Linux).
 
 ---
 
-## Setup & Running the Game
+## Step-by-Step Connection & Setup Guide
 
-### Prerequisites
-- A computer (Mac or Windows) and an Android device connected to the **same Wi-Fi network**.
-- **Python 3.x** installed and added to the system PATH.
-- The compiled Android application running on your phone.
+To establish a low-latency connection between your Android device (controller) and your display device (monitor/computer), follow these instructions:
 
-### Quick Start
+### 1. Set Up the Network Connection (Hotspot)
+For the lowest latency and most reliable connection, connect both devices directly using a Wi-Fi Hotspot:
+1. On your **Android device**, enable your **Wi-Fi Hotspot** (Portable Hotspot).
+2. On your **Display device (computer)**, open your Wi-Fi settings and connect to the Android device's hotspot network.
 
-#### For macOS:
-1. Double-click **`MacOS.command`** in this directory to start the Python server.
-   - *Note: On first run, you may need to grant execution permissions by running `chmod +x MacOS.command` in the terminal.*
-2. The script will automatically:
-   - Create a Python virtual environment (`venv`) if not present.
-   - Install required dependencies (`websockets`).
-   - Run the Python bridge WebSocket & UDP server.
-   - Launch your default web browser to the game page.
+### 2. Install and Start the Android Controller
+1. Transfer and install **`app-release.apk`** on your Android device.
+2. Open the **Sensor Bridge** application on your phone.
+3. Tap the **Start Stream** or **Connect** button in the app.
+4. Once the stream starts, the app will display a local IP address (typically `192.168.43.1` when using a hotspot). Note this IP address down.
 
-#### For Windows:
-1. Double-click **`Windows.bat`** in this directory to start the Python server.
-2. The script will automatically:
-   - Create a Python virtual environment (`venv`) if not present.
-   - Install required dependencies (`websockets`).
-   - Run the Python bridge WebSocket & UDP server.
-   - Launch your default web browser to the game page.
+### 3. Open the Game and Connect Telemetry
+1. Double-click and open **`index.html`** in your web browser on the display device.
+2. You will be greeted by the **Connect Telemetry** screen asking for the **Android Host IP**.
+3. Enter the IP address shown on your Android device's screen into the input field.
+4. Click **Connect**.
+5. Once connected:
+    * The status indicator will turn green and show **CONNECTED**.
+    * The game menu will appear. Tap **Set Sail** to begin flying!
 
 ---
 
-## Connecting your Android Controller
+## Gameplay & Controls
 
-1. Find the local IP address displayed on the top-right corner of the web browser game window or in the terminal console (e.g. `192.168.1.X`).
-2. Open the **Sensor Bridge** app on your Android device.
-3. Enter the IP address shown on the game screen into the IP address input field in the app.
-4. Set the port to `9000`.
-5. Tap **Connect** / **Start Telemetry** to start streaming. The red status dot in the top-right corner of the game should turn green and show **CONNECTED**.
+### Motion Steering
+*   **Roll (Tilt Left / Right):** Steers the paper plane left and right.
+*   **Pitch (Tilt Forward / Backward):** Dives down or climbs up to adjust altitude.
+*   **Keyboard Fallback:** If the controller is disconnected, you can use the **Arrow keys** or **WASD** to fly.
 
-### Connection Guide Diagrams
-Below is the connection flow:
-
-| 1. Get IP from Game UI | 2. Enter IP & Port in Android App |
-| :---: | :---: |
-| ![Get IP Address from Web UI Screen](screenshot_game_ip.png) | ![Enter IP and Port in Android App](screenshot_android_connect.png) |
-
-*(Place screenshot images named `screenshot_game_ip.png` and `screenshot_android_connect.png` in this directory to display them above.)*
+### Objectives
+*   Fly through the **Golden Rings** to score points (+10 per ring) and gain speed boosts.
+*   **Avoid crashing** into the ocean surface or missing a ring. Touching the water or failing to enter a ring results in a crash.
+*   Adjust the **Tilt Sensitivity** and **Input Smoothing** via the Calibration Panel before taking off to suit your preferences.
 
 ---
 
-## How to Play
+## Troubleshooting
 
-### Controls
-- **Tilt Controller (Android Device):**
-  - **Pitch (Tilt Forward/Backward):** Controls the altitude (climbs up or dives down).
-  - **Roll (Tilt Left/Right):** Turns the paper plane left and right.
-- **Keyboard Controls (Fallback / Testing):**
-  - **Arrow Keys** or **WASD** to steer the plane manually from the keyboard if no phone is connected.
-
-### Objectives & Gameplay
-- **Fly through the golden ring hoops** to score points (+10 pts per ring).
-- Passing through a ring increases your flight speed.
-- **Avoid crashing** into the ocean surface or missing a ring hoop.
-- If you miss a ring hoop or touch the water, the game ends.
-- Adjust the controller sensitivity (Pitch/Roll) on the bottom-left settings panel of the screen to tune control response.
+*   **Connection Fails / Times Out:**
+    *   Ensure your computer is successfully connected to the Android Wi-Fi Hotspot.
+    *   Verify that the IP entered in `index.html` matches the IP displayed on the Android app exactly.
+    *   Ensure that no firewall or security software on your computer is blocking incoming WebSocket connections on port `8765`.
